@@ -1,18 +1,79 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:internship/components/my_button.dart';
 import 'package:internship/components/my_textfield.dart';
 import 'package:internship/components/square_tile.dart';
+import 'package:internship/pages/register_page.dart';
+import 'package:internship/pages/home_page.dart';
+import 'package:internship/services/auth_service.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   LoginPage({super.key});
 
-  // text editing controllers
-  final usernameController = TextEditingController();
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  // sign user in method
-  void signUserIn() {
+  @override
+  void initState() {
+    super.initState();
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (user != null) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+          (Route<dynamic> route) => false,
+        );
+      }
+    });
+  }
 
+  void signUserIn() async {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: emailController.text,
+        password: passwordController.text,
+      );
+      Navigator.pop(context);
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+        (Route<dynamic> route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      Navigator.pop(context);
+      showErrorMessage(e.code);
+    }
+  }
+
+  void showErrorMessage(String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.deepPurple,
+          title: Center(
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -21,182 +82,102 @@ class LoginPage extends StatelessWidget {
       backgroundColor: Colors.grey[300],
       body: SafeArea(
         child: Center(
-          child: Column(
-            children: [
-              const SizedBox(height: 55),
-
-              // logo
-              const Icon(
-                Icons.lock,
-                size: 100,
-              ),
-
-              const SizedBox(height: 20),
-
-              // "login"
-              const Text(
-                "Log In",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 24,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 5),
+                const Icon(Icons.lock, size: 100),
+                const SizedBox(height: 20),
+                const Text("Welcome!", style: TextStyle(color: Colors.black, fontSize: 24)),
+                const SizedBox(height: 15),
+                MyTextField(
+                  controller: emailController,
+                  hintText: 'Email',
+                  obscureText: false,
                 ),
-              ),
-
-              const SizedBox(height: 15),
-
-              // username textfield
-              MyTextField(
-                controller: usernameController,
-                hintText: 'Username',
-                obscureText: false,
-               ),
-              
-              const SizedBox(height: 15), // Add a SizedBox for spacing
-
-              // password textfield
-              MyTextField(
-                controller: passwordController,
-                hintText: 'Password',
-                obscureText: true,
-              ),
-
-              const SizedBox(height: 20), // Add a SizedBox for spacing
-
-              // sign in button
-              MyButton(
-                onTap: signUserIn,
-              ),
-
-              const SizedBox(height: 25), // Add a SizedBox for spacing
-
-              // "or continue with"
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 150.0),
-                child: Row(
+                const SizedBox(height: 15),
+                MyTextField(
+                  controller: passwordController,
+                  hintText: 'Password',
+                  obscureText: true,
+                ),
+                const SizedBox(height: 20),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: MyButton(onTap: signUserIn),
+                ),
+                const SizedBox(height: 25),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 150.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Divider(thickness: 0.25, color: Colors.black),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 15.0),
+                        child: Text("Or continue with", style: TextStyle(color: Colors.black54)),
+                      ),
+                      Expanded(
+                        child: Divider(thickness: 0.25, color: Colors.black),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: Divider(
-                        thickness: 0.25,
-                        color: Colors.black,
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: SquareTile(
+                        onTap: () => AuthService().signInWithGoogle(),
+                        imagePath: 'lib/images/gmail.png',
                       ),
                     ),
-
-                    Padding(padding: EdgeInsets.symmetric(horizontal: 15.0),
-                    child:  Text(
-                      "Or continue with",
-                      style: TextStyle(color: Colors.black54),
+                    const SizedBox(width: 10.0),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: SquareTile(
+                        onTap: () {},
+                        imagePath: 'lib/images/facebook.png',
                       ),
                     ),
-
-                    Expanded(
-                      child: Divider(
-                        thickness: 0.25,
-                        color: Colors.black,
+                    const SizedBox(width: 10.0),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: SquareTile(
+                        onTap: () => AuthService().signInWithApple(),
+                        imagePath: 'lib/images/apple.png',
                       ),
-                    ),  
+                    ),
                   ],
-                ) 
-              ),
-
-              const SizedBox(height: 20), // Add a SizedBox for spacing
-
-              // google + facebook + apple id sign in buttons
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // google button
-                  SquareTile(imagePath: 'lib/images/gmail.png'),
-
-                  SizedBox(width: 10.0), // Add a SizedBox for spacing
-
-                  // facebook button
-                  SquareTile(imagePath:  'lib/images/facebook.png'),
-              
-                  SizedBox(width: 10.0), // Add a SizedBox for spacing
-
-                  // apple id button
-                  SquareTile(imagePath:  'lib/images/apple.png'),
-                ],
-              ),
-
-               const SizedBox(height: 20), // Add a SizedBox for spacing
-
-              // not a member? register here
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Not a member?"),
-                  SizedBox(width: 3.0), // Add a SizedBox for spacing
-                  Text(
-                    "Register now",
-                    style: TextStyle(
-                      color: Colors.blue, 
-                      fontWeight: FontWeight.bold,
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Not a member?"),
+                    const SizedBox(width: 3.0),
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => RegisterPage()),
+                          );
+                        },
+                        child: const Text(
+                          "Register now",
+                          style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                        ),
+                      ),
                     ),
-                    ),
-                ],
-              )
-
-              // // forgot password
-              // TextButton(
-              //   onPressed: () {
-              //     // Add forgot password functionality
-              //   },
-              //   child: Text('Forgot Password?'),
-              // ),
-
-              // SizedBox(height: 15), // Add a SizedBox for spacing
-
-              // // sign in button
-              // ElevatedButton(
-              //   onPressed: () {
-              //     // Add sign-in functionality
-              //   },
-              //   child: Text('Sign In'),
-              // ),
-
-              // SizedBox(height: 15), // Add a SizedBox for spacing
-
-              // // "or continue with"
-              // Text('Or continue with'),
-
-              // SizedBox(height: 15), // Add a SizedBox for spacing
-
-              // // other sign in buttons (gmail, facebook, & apple)
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.center,
-              //   children: [
-              //     IconButton(
-              //       onPressed: () {
-              //         // Add Google sign-in functionality
-              //       },
-              //       icon: Icon(Icons.mail), // Replace with Google icon
-              //     ),
-              //     IconButton(
-              //       onPressed: () {
-              //         // Add Facebook sign-in functionality
-              //       },
-              //       icon: Icon(Icons.facebook), // Replace with Facebook icon
-              //     ),
-              //     IconButton(
-              //       onPressed: () {
-              //         // Add Apple sign-in functionality
-              //       },
-              //       icon: Icon(Icons.apple), // Replace with Apple icon
-              //     ),
-              //   ],
-              // ),
-
-              // SizedBox(height: 15), // Add a SizedBox for spacing
-
-              // // not a member? register now
-              // TextButton(
-              //   onPressed: () {
-              //     // Add register functionality
-              //   },
-              //   child: Text('Not a member? Register now'),
-              // ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
